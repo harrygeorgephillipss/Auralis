@@ -81,7 +81,9 @@ class AppPrivateDownloadEngine implements DownloadEngine {
       var received = 0;
       await for (final chunk in response.stream) {
         if (_tasks[id]?.status == DownloadTaskStatus.cancelled ||
-            _tasks[id]?.status == DownloadTaskStatus.paused) throw const _TransferStopped();
+            _tasks[id]?.status == DownloadTaskStatus.paused) {
+          throw const _TransferStopped();
+        }
         sink.add(chunk);
         received += chunk.length;
         _tasks[id] = DownloadTaskSnapshot(id: id, status: DownloadTaskStatus.running, bytesReceived: received, totalBytes: total);
