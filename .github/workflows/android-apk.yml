@@ -60,6 +60,8 @@ jobs:
           grep -q 'minSdk = 28' android/app/build.gradle.kts
           grep -q 'compileSdk = 36' android/app/build.gradle.kts
           grep -q 'com.ryanheise.audioservice.AudioService' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:name="flutterEmbedding"' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:value="2"' android/app/src/main/AndroidManifest.xml
 
       - name: Prepare Mornye audio plugin for standalone path dependency
         run: |
