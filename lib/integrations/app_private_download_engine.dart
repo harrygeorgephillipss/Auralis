@@ -35,7 +35,7 @@ class AppPrivateDownloadEngine implements DownloadEngine {
     if (request.source.scheme != 'https' || request.source.host.isEmpty) {
       throw ArgumentError.value(request.source, 'source', 'HTTPS URL required');
     }
-    if (!RegExp(r'^[A-Za-z0-9_-]{1,80}
+    if (request.id.isEmpty || request.id.length > 80 || request.id.contains(RegExp(r'[^A-Za-z0-9_-]')) || _requests.containsKey(request.id)) {
       throw ArgumentError.value(request.id, 'id', 'A unique non-empty task id is required');
     }
     await _storageDirectory.create(recursive: true);
