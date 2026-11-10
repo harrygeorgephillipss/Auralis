@@ -4,7 +4,7 @@ Auralis is an Android-first, open-source music player project built with Flutter
 
 <badge>Engineering preview</badge>
 
-**Current state (0.2.0):** Auralis can import audio files through Android's system file picker and play them locally with an embedded player, queue navigation and seek control. The online catalogue, provider extensions, background media session, equalizer and authorized online downloads are not integrated yet. This is an early functional preview, not the completed merged product.
+**Current state (0.3.0):** The app now has iTunes catalogue search with 30-second preview playback, a SQLite-backed persistent library, an `audio_service` media session for Android background/notification controls, and a five-band Android equalizer using Mornye's maintained `audioplayers_android` fork. The full Mornye Rust extension runtime and authorized download queue are still not integrated. Mochy's Kotlin provider modules have not been ported; iTunes search is a separate, limited catalogue adapter. This remains an engineering preview.
 
 ## Project goals
 
@@ -24,9 +24,9 @@ Auralis is an Android-first, open-source music player project built with Flutter
 | UI | Flutter / Dart |
 | State | Riverpod (to be integrated after architecture review) |
 | Navigation | GoRouter (to be integrated after architecture review) |
-| Local playback | `audioplayers` (same playback package used by Mornye) |
-| Persistence | SQLite |
-| Native audio / provider operations | Mornye Rust bridge and extension system remain under integration review |
+| Playback / media session | `audioplayers` + Mornye's Android plugin fork + `audio_service` |
+| Persistence | SQLite (`sqflite`) |
+| Equalizer | Mornye's Android `DynamicsProcessing` integration (Android 9+) |\n| Discovery | iTunes Search API (preview streams only) |\n| Extension downloads | Mornye Rust extension runtime still pending |
 | CI | GitHub Actions |
 
 ## Repository layout
@@ -64,7 +64,7 @@ Mornye is pinned as a Git submodule at `upstream/mornye` so the reviewed upstrea
 git clone --recurse-submodules https://github.com/harrygeorgephillipss/Auralis.git
 ```
 
-If already cloned, run `git submodule update --init --recursive`. See [the upstream pin](docs/UPSTREAM_PIN.md) and [Android port checklist](docs/ANDROID_PORT_CHECKLIST.md). The root Auralis app currently has a working local-file playback slice. Mornye's wider library, extension, Rust backend, notification and download modules have not yet been migrated.
+If already cloned, run `git submodule update --init --recursive`. See [the upstream pin](docs/UPSTREAM_PIN.md) and [Android port checklist](docs/ANDROID_PORT_CHECKLIST.md). The root app now integrates the Mornye Android audio-effects plugin fork and the Mornye-bundled `audio_service` package. The complete Mornye Rust backend, extension repository/install runtime, and download pipeline remain pending.
 
 ## Getting started
 
@@ -81,7 +81,7 @@ If already cloned, run `git submodule update --init --recursive`. See [the upstr
 
 ## Source inspirations and attribution
 
-Auralis was planned after reviewing user-provided source archives for Mochy Music and Mornye. The initial implementation strategy is to use Mornye's Flutter architecture as the technical base and independently implement the desired UI/UX ideas. No Mochy Kotlin source has been copied into this scaffold.
+Auralis was planned after reviewing user-provided source archives for Mochy Music and Mornye. The initial implementation strategy is to use Mornye's Flutter architecture as the technical base and independently implement the desired UI/UX ideas. No Mochy Kotlin source has been copied into this scaffold. The current online catalogue adapter uses Apple's public iTunes Search API and exposes only the preview URL returned by that API.
 
 Before importing any source modules, follow `docs/SOURCE_AUDIT.md` and `docs/SECURITY_AND_LEGAL.md`. Keep all upstream copyright notices and license texts for any code that is later reused.
 
