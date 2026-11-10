@@ -4,6 +4,7 @@
 
 - Set Android minimum SDK to API 28 and target SDK to API 36 in the reproducible Android build preparation step.
 - Added a monochrome adaptive Auralis launcher icon and dark native launch background.
+- Added the Android media playback foreground service, media-button receiver, v2 embedding metadata and Android 9 emulator smoke-test workflow.
 - Added a short animated A-mark Flutter launch screen.
 - Configured music audio-session attributes and added a fallback to in-app playback if Android media-service initialization fails.
 - Made SQLite open initialization safe against overlapping calls.
