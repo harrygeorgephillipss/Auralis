@@ -14,7 +14,13 @@ Mochy is Android/Kotlin. Reimplement selected interaction patterns in Flutter; d
 - Review privacy, telemetry, authentication, provider terms and download behavior.
 - Build each upstream project independently before migration.
 
-## Phase 1 — Android foundation (current priority)
+## Phase 1 — Android foundation (implemented in 0.4.0)
+
+- CI generates and configures the Android host project.
+- Minimum Android API is 28 (Android 9); compile and target SDK are 36.
+- The manifest declares Flutter embedding v2, the media playback foreground service, media-button receiver and required permissions.
+- A monochrome adaptive launcher icon and native launch background are generated from the Auralis mark.
+- An API 28 emulator smoke test is part of the Android workflow; physical-device testing remains a release gate.
 
 1. Establish a reproducible Flutter/Android CI toolchain.
 2. Add and validate the Android host project and stable Auralis application ID.
@@ -37,7 +43,11 @@ Mochy is Android/Kotlin. Reimplement selected interaction patterns in Flutter; d
 - Add themes, player layouts, artwork treatment and visualizer settings.
 - Validate small/large screens, landscape, accessibility font scaling and reduced motion.
 
-## Phase 4 — local playback and library
+## Phase 4 — local playback and library (basic path implemented; deeper coverage pending)
+
+- Local audio import, app-private file copies and SQLite metadata persistence are implemented.
+- Background media session, audio-session configuration, interruption handling and a five-band Android equalizer are integrated.
+- Queue behavior is currently limited to tracks played in the current session; playlists, history and richer metadata editing remain pending.
 
 - Integrate playback, Android media session, foreground service/notification, audio focus and headset actions.
 - Add local file access via Android Storage Access Framework / supported media APIs.
@@ -54,14 +64,14 @@ Mochy is Android/Kotlin. Reimplement selected interaction patterns in Flutter; d
 
 ## Phase 6 — release readiness
 
-- Add unit, widget, integration and device tests.
-- Run Android debug and release builds on CI.
-- Complete security, privacy, dependency and license audits.
+- Unit tests and Flutter analysis run in CI; Android release APK build and API 28 emulator launch smoke test are being validated.
+- Complete real-device checks for audio focus, notification controls, file import, process death and supported formats.
+- Complete full transitive dependency, provider terms, privacy and licence audits before public distribution.
 - Publish notices, SBOM/dependency inventory and reproducible build steps.
 - Produce signed builds only with owner-controlled signing material.
 
 ## Explicit non-goals
 
 - No claim that Auralis is a working streaming/downloading app until providers and playback are implemented and tested.
-- No APK release until Android build, permissions, background playback and licensing checks pass.
+- Do not describe 0.4.0 as a complete provider/download client; provider and authorized download integration remains pending.
 - No redistribution of bundled partner SDKs or proprietary artwork without explicit rights.
