@@ -30,7 +30,7 @@ Future<void> main() async {
         androidNotificationChannelId: 'com.auralis.playback',
         androidNotificationChannelName: 'Auralis playback',
         androidNotificationOngoing: true,
-        androidStopForegroundOnPause: false,
+        androidStopForegroundOnPause: true,
       ),
     );
   } catch (error, stack) {
