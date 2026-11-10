@@ -10,8 +10,8 @@ The Auralis application source in this repository is released under **GNU LGPL-3
 
 | Component | Source | Licence | Use in Auralis |
 |---|---|---|---|
-| audio_service fork | Mornye pinned submodule, `third_party/audio_service` | MIT | Android media session and notification integration |
-| audioplayers_android fork | Mornye pinned submodule, `third_party/audioplayers_android` | MIT | Android audio output and native equalizer bridge |
+| audio_service 0.18.19 fork | Mornye pinned submodule, `third_party/audio_service` | MIT | Android media session and notification integration |
+| audioplayers_android 5.3.0 fork | Mornye pinned submodule, `third_party/audioplayers_android` | MIT | Android audio output and native equalizer bridge |
 | Flutter / Dart SDK | Google | BSD-style | App framework and runtime |
 
 Preserve the copyright and licence files in the upstream submodule when redistributing source or binaries. The relevant MIT licence texts are available at:
