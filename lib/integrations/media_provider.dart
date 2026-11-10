@@ -9,6 +9,7 @@ class ProviderTrack {
   final Uri? artworkUri;
   final Duration? duration;
   final Uri? providerPageUri;
+  final Uri? previewUri;
   String get stableId => '$providerId:$id';
 }
 
