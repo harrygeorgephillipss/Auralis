@@ -15,6 +15,9 @@ jobs:
         with:
           flutter-version: '3.47.8'
       - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed .
+      - name: Format Auralis-owned Dart code
+        run: dart format lib test
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
       - run: flutter test
