@@ -3,7 +3,8 @@ name: Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, 'integration/**']
+  pull_request:
     paths:
       - 'lib/**'
       - 'test/**'
@@ -121,8 +122,5 @@ jobs:
             adb install -r build/app-release.apk
             adb shell am start -n com.auralis.auralis/.MainActivity
             sleep 10
-            adb shell pidof com.auralis.auralis
-            if adb logcat -d -s AndroidRuntime:E | grep -q "FATAL EXCEPTION"; then
-              adb logcat -d -s AndroidRuntime:E
-              exit 1
-            fi
+            adb shell pidof com.auralis.auralis | grep -q '[0-9]'
+            ! adb logcat -d -s AndroidRuntime:E | grep -q 'FATAL EXCEPTION'
