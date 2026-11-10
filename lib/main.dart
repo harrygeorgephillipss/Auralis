@@ -38,6 +38,18 @@ Future<void> main() async {
     handler = AuralisAudioHandler();
   }
   try {
+    final session = await AudioSession.instance;
+    session.interruptionEventStream.listen((event) {
+      if (event.begin && event.type == AudioInterruptionType.pause) {
+        unawaited(handler.pause());
+      }
+    }, onError: (Object error) => debugPrint('Audio interruption stream: $error'));
+    session.becomingNoisyEventStream.listen((_) => unawaited(handler.pause()),
+      onError: (Object error) => debugPrint('Audio route stream: $error'));
+  } catch (error) {
+    debugPrint('Auralis audio interruption listeners unavailable: $error');
+  }
+  try {
     await LibraryDb.instance.open();
   } catch (error, stack) {
     debugPrint('Auralis library initialization failed: $error\\n$stack');
@@ -241,7 +253,13 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
 
   @override Future<void> play() async {
     if (_disposed) return;
-    try { await player.resume(); } catch (e) { debugPrint('Auralis resume failed: $e'); }
+    try {
+      if (_index >= 0 && (!_ready || player.state == PlayerState.completed)) {
+        if (player.state == PlayerState.completed) await player.seek(Duration.zero);
+        if (!_ready) { await _playIndex(_index); return; }
+      }
+      await player.resume();
+    } catch (e) { debugPrint('Auralis resume failed: $e'); }
   }
   @override Future<void> pause() async {
     if (_disposed) return;
