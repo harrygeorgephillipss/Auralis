@@ -2,7 +2,7 @@ import 'package:auralis/main.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Auralis renders primary navigation and home content',
+  testWidgets('Auralis renders primary navigation and local library entry point',
       (tester) async {
     await tester.pumpWidget(const AuralisApp());
 
@@ -12,24 +12,30 @@ void main() {
     expect(find.text('Library'), findsOneWidget);
     expect(find.text('Downloads'), findsOneWidget);
     expect(find.text('Listen without limits.'), findsOneWidget);
+    expect(find.text('Import music'), findsOneWidget);
   });
 
-  testWidgets('navigation switches between sections without losing shell',
-      (tester) async {
+  testWidgets('library explains how to import local audio', (tester) async {
     await tester.pumpWidget(const AuralisApp());
 
     await tester.tap(find.text('Library'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Your library'), findsOneWidget);
-    expect(find.text('Auralis'), findsOneWidget);
-    expect(find.text('Nothing playing'), findsOneWidget);
+    expect(find.text('Your music'), findsOneWidget);
+    expect(find.text('Your library is empty'), findsOneWidget);
+    expect(find.textContaining('choose audio files from your phone'),
+        findsOneWidget);
+  });
+
+  testWidgets('downloads page clearly reports that online downloads are not '
+      'integrated', (tester) async {
+    await tester.pumpWidget(const AuralisApp());
 
     await tester.tap(find.text('Downloads'));
     await tester.pumpAndSettle();
 
     expect(find.text('Downloads'), findsWidgets);
-    expect(find.text('Your authorized downloads will appear here.'),
+    expect(find.textContaining('does not download online tracks yet'),
         findsOneWidget);
   });
 
@@ -40,9 +46,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Settings'), findsOneWidget);
-    expect(
-      find.text('Themes, player layouts, audio and provider preferences.'),
-      findsOneWidget,
-    );
+    expect(find.text('Audio engine'), findsOneWidget);
   });
 }
