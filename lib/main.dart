@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
@@ -8,10 +7,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'integrations/itunes_preview_provider.dart';
+import 'integrations/media_provider.dart';
 
 const _eq = MethodChannel('xyz.luan/audioplayers');
 
@@ -396,6 +396,7 @@ class AuralisShell extends StatefulWidget {
 
 class _AuralisShellState extends State<AuralisShell> {
   final _search = TextEditingController();
+  final ProviderCatalogue _catalogue = ProviderCatalogue([ItunesPreviewProvider()]);
   final List<Track> _library = [], _results = [];
   int _tab = 0;
   bool _busy = false, _eqEnabled = false;
@@ -450,23 +451,18 @@ class _AuralisShellState extends State<AuralisShell> {
     setState(() { _busy = true; _error = null; _results.clear(); });
     final found = <Track>[];
     try {
-      final uri = Uri.https('itunes.apple.com', '/search',
-        {'term': query.trim(), 'entity': 'song', 'limit': '30'});
-      final response = await http.get(uri).timeout(const Duration(seconds: 15));
-      if (response.statusCode != 200) throw Exception('Catalogue HTTP ${response.statusCode}');
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      for (final row in (data['results'] as List<dynamic>? ?? [])) {
-        if (row is! Map<String, dynamic> || row['previewUrl'] is! String || row['trackId'] == null) continue;
-        final previewUri = Uri.tryParse(row['previewUrl'] as String);
-        if (previewUri == null || previewUri.scheme != 'https') continue;
+      final page = await _catalogue.search(query, limitPerProvider: 30);
+      for (final match in page) {
+        final item = match.track;
+        final source = await _catalogue.resolve(item);
         found.add(Track(
-          id: 'itunes_${row['trackId']}', uri: previewUri.toString(),
-          title: row['trackName'] as String? ?? 'Unknown title',
-          artist: row['artistName'] as String? ?? 'Unknown artist',
-          album: row['collectionName'] as String? ?? '',
-          artwork: (row['artworkUrl100'] as String?)?.replaceAll('100x100bb', '600x600bb'),
-          durationMs: row['trackTimeMillis'] as int? ?? 0,
-          kind: 'remote', providerUrl: row['trackViewUrl'] as String?));
+          id: item.stableId, uri: source.uri.toString(),
+          title: item.title, artist: item.artist,
+          album: item.album ?? '',
+          artwork: item.artworkUri?.toString(),
+          durationMs: item.duration?.inMilliseconds ?? 0,
+          kind: 'remote', providerUrl: item.providerPageUri?.toString(),
+        ));
       }
     } on TimeoutException {
       if (request == _searchSequence) _error = 'The catalogue request timed out. Check your connection and retry.';
@@ -514,7 +510,7 @@ class _AuralisShellState extends State<AuralisShell> {
           if (mounted) setState(() { _eqEnabled = enabled; _gains = List.of(gains); });
         })));
   }
-  @override void dispose() { _search.dispose(); super.dispose(); }
+  @override void dispose() { _search.dispose(); _catalogue.dispose(); super.dispose(); }
 
   @override Widget build(BuildContext context) {
     final pages = [

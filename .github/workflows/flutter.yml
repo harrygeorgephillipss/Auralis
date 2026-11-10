@@ -2,7 +2,7 @@ name: Flutter checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'integration/**']
     paths:
       - 'lib/**'
       - 'test/**'
