@@ -27,6 +27,7 @@ app.set(ANDROID + "label", "Auralis")
 app.set(ANDROID + "icon", "@mipmap/ic_launcher")
 app.set(ANDROID + "roundIcon", "@mipmap/ic_launcher")
 app.set(ANDROID + "usesCleartextTraffic", "false")
+app.set(ANDROID + "allowBackup", "false")
 root = tree.getroot()
 existing = {node.get(ANDROID + "name") for node in root.findall("uses-permission")}
 permissions = [
