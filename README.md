@@ -37,6 +37,7 @@ See [Android installation](docs/INSTALLATION.md). The reproducible GitHub Action
 - `docs/INSTALLATION.md` — install and first-run guide.
 - `docs/SECURITY_AND_LEGAL.md` — security and legal boundaries.
 - `docs/PRIVACY_POLICY.md` — current data and network behavior.
+- `docs/RELEASE_CHECKLIST.md` — automated and real-device release checks.
 
 ## Licence
 
