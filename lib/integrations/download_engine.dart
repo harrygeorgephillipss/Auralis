@@ -22,7 +22,7 @@ class DownloadTaskSnapshot {
   double? get progress {
     final total = totalBytes;
     if (total == null || total <= 0) return null;
-    return (bytesReceived / total).clamp(0.0, 1.0);
+    return (bytesReceived / total).clamp(0.0, 1.0).toDouble();
   }
 }
 
