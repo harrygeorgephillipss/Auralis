@@ -40,7 +40,8 @@ jobs:
         run: flutter create --platforms=android --org com.auralis --project-name auralis .
 
       - name: Prepare Mornye audio plugin for standalone path dependency
-        run: sed -i '/^resolution: workspace$/d' upstream/mornye/third_party/audioplayers_android/pubspec.yaml
+        run: |
+          sed -i '/^resolution: workspace$/d' upstream/mornye/third_party/audioplayers_android/pubspec.yaml
 
       - name: Resolve Flutter dependencies
         run: flutter pub get
