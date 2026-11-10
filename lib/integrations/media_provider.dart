@@ -1,6 +1,6 @@
 /// Provider-neutral metadata. Adapters translate upstream responses into this model.
 class ProviderTrack {
-  const ProviderTrack({required this.id, required this.providerId, required this.title, required this.artist, this.album, this.artworkUri, this.duration, this.providerPageUri});
+  const ProviderTrack({required this.id, required this.providerId, required this.title, required this.artist, this.album, this.artworkUri, this.duration, this.providerPageUri, this.previewUri});
   final String id;
   final String providerId;
   final String title;
