@@ -18,6 +18,7 @@
 - Use **Import music** to select local audio. Auralis copies selected files into its private app storage so the library does not depend on temporary picker cache files.
 - Use **Explore** for catalogue discovery. The current iTunes adapter returns short preview streams, not full tracks.
 - The five-band equalizer depends on Android's DynamicsProcessing support (Android 9+); unsupported devices can still play audio.
+- Open **Settings → Open-source licences** to view the Auralis LGPL text and third-party notices.
 - Background media controls are provided through Android's media session.
 
 ## Known feature boundary
