@@ -28,6 +28,9 @@ jobs:
       - name: Verify Dart formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
+      - name: Prepare Mornye audio plugin for standalone path dependency
+        run: sed -i '/^resolution: workspace$/d' upstream/mornye/third_party/audioplayers_android/pubspec.yaml
+
       - name: Resolve dependencies
         run: flutter pub get
 
