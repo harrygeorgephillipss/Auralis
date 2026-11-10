@@ -12,6 +12,8 @@ jobs:
   build-release-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
     steps:
       - name: Check out Auralis and pinned upstream source
         uses: actions/checkout@v4
@@ -24,15 +26,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.47.8'
           channel: stable
           cache: true
+
+      - name: Accept Android SDK licences
+        run: yes | flutter doctor --android-licenses
 
       - name: Generate Android host project
         run: flutter create --platforms=android --org com.auralis --project-name auralis .
