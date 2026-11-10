@@ -9,6 +9,7 @@ class DownloadRequest {
   final String fileName;
   final int? expectedBytes;
   final String? mimeType;
+  final bool offlineSavingAllowed;
 }
 
 class DownloadTaskSnapshot {
