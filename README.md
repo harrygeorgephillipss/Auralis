@@ -54,6 +54,16 @@ auralis/
 └── pubspec.yaml
 ```
 
+## Upstream source
+
+Mornye is pinned as a Git submodule at `upstream/mornye` so the reviewed upstream source and its history remain auditable. Clone it with:
+
+```bash
+git clone --recurse-submodules https://github.com/harrygeorgephillipss/Auralis.git
+```
+
+If already cloned, run `git submodule update --init --recursive`. See [the upstream pin](docs/UPSTREAM_PIN.md) and [Android port checklist](docs/ANDROID_PORT_CHECKLIST.md). The root Auralis app is still a starter shell; the Mornye app has not yet been migrated into the root Flutter package.
+
 ## Getting started
 
 1. Install the Flutter stable SDK and Android Studio / Android SDK.
