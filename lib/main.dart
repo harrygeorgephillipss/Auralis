@@ -199,8 +199,10 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
       }
       _publish();
     } catch (e) {
-      _ready = false;
-      _publish();
+      if (!_disposed && request == _playRequest) {
+        _ready = false;
+        _publish();
+      }
       rethrow;
     }
   }
