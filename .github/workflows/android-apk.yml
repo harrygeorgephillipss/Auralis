@@ -4,6 +4,18 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'pubspec.yaml'
+      - 'scripts/**'
+      - '.github/workflows/android-apk.yml'
+      - '.gitmodules'
+      - 'upstream/mornye'
+
+concurrency:
+  group: auralis-android-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
