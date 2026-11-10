@@ -1,11 +1,9 @@
 name: auralis
 description: An Android-first, open-source music player.
 publish_to: "none"
-version: 0.2.0+2
-
+version: 0.3.0+3
 environment:
   sdk: "^3.10.0"
-
 dependencies:
   flutter:
     sdk: flutter
@@ -14,11 +12,18 @@ dependencies:
   cupertino_icons: ^1.0.8
   audioplayers: ^6.8.1
   file_picker: ^13.3.0
-
+  http: ^1.4.0
+  path: ^1.9.1
+  sqflite: ^2.4.2
+  audio_session: ^0.2.4
+  audio_service:
+    path: upstream/mornye/third_party/audio_service
+dependency_overrides:
+  audioplayers_android:
+    path: upstream/mornye/third_party/audioplayers_android
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-
 flutter:
   uses-material-design: true
