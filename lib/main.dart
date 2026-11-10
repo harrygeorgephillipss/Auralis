@@ -334,6 +334,7 @@ class _HomePage extends StatelessWidget {
       const ListTile(leading: Icon(Icons.notifications_active_outlined), title: Text('Background playback'), subtitle: Text('Android media notification and lock-screen controls')),
       const ListTile(leading: Icon(Icons.equalizer_rounded), title: Text('5-band equalizer'), subtitle: Text('Android DynamicsProcessing where supported')),
     ]);
+}
 
 class _ExplorePage extends StatelessWidget {
   const _ExplorePage({required this.controller, required this.results, required this.busy,
