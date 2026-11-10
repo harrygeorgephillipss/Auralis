@@ -22,7 +22,11 @@ Future<void> main() async {
       androidStopForegroundOnPause: false,
     ),
   );
-  await LibraryDb.instance.open();
+  try {
+    await LibraryDb.instance.open();
+  } catch (error, stack) {
+    debugPrint('Auralis library initialization failed: $error\\n$stack');
+  }
   runApp(AuralisApp(handler: handler));
 }
 
@@ -62,7 +66,7 @@ class LibraryDb {
   static final instance = LibraryDb._();
   Database? _db;
   Future<void> open() async {
-    if (_db != null) return;
+    if (_db != null && _db!.isOpen) return;
     _db = await openDatabase(p.join(await getDatabasesPath(), 'auralis.db'),
       version: 1, onCreate: (db, _) => db.execute('''
         CREATE TABLE tracks(id TEXT PRIMARY KEY, uri TEXT NOT NULL,
@@ -70,13 +74,17 @@ class LibraryDb {
         album TEXT, artwork TEXT, duration_ms INTEGER, provider_url TEXT)
       '''));
   }
+  Future<Database> get database async {
+    if (_db == null || !_db!.isOpen) await open();
+    return _db!;
+  }
   Future<List<Track>> all() async =>
-    (await _db!.query('tracks', orderBy: 'title COLLATE NOCASE'))
+    (await (await database).query('tracks', orderBy: 'title COLLATE NOCASE'))
       .map(Track.fromMap).toList();
-  Future<void> save(Track t) async => _db!.insert('tracks', t.toMap(),
+  Future<void> save(Track t) async => (await database).insert('tracks', t.toMap(),
     conflictAlgorithm: ConflictAlgorithm.replace);
   Future<void> remove(String id) async =>
-    _db!.delete('tracks', where: 'id=?', whereArgs: [id]);
+    (await database).delete('tracks', where: 'id=?', whereArgs: [id]);
 }
 
 class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
@@ -84,6 +92,8 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
   final List<MediaItem> _queue = [];
   int _index = -1;
   bool _ready = false;
+  bool _disposed = false;
+  Future<void> _operation = Future<void>.value();
   bool _eqEnabled = false;
   List<double> _eqGains = List<double>.filled(5, 0);
   Duration _position = Duration.zero;
@@ -92,23 +102,29 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
   StreamSubscription<void>? _complete;
 
   AuralisAudioHandler() {
-    _states = player.onPlayerStateChanged.listen((_) => _publish());
-    _positions = player.onPositionChanged.listen((position) { _position = position; _publish(); });
+    _states = player.onPlayerStateChanged.listen((_) => _publish(),
+      onError: (Object e) => debugPrint('Auralis player state stream: $e'));
+    _positions = player.onPositionChanged.listen((position) { _position = position; _publish(); },
+      onError: (Object e) => debugPrint('Auralis position stream: $e'));
     _durations = player.onDurationChanged.listen((d) {
       final item = mediaItem.value;
       if (item != null) mediaItem.add(item.copyWith(duration: d));
       _publish();
-    });
+    }, onError: (Object e) => debugPrint('Auralis duration stream: $e'));
     _complete = player.onPlayerComplete.listen((_) {
       if (_index + 1 < _queue.length) {
-        unawaited(_playIndex(_index + 1));
+        unawaited(_playIndex(_index + 1).catchError((Object e) {
+          debugPrint('Auralis next-track playback failed: $e');
+          _publish();
+        }));
       } else {
         _publish(completed: true);
       }
-    });
+    }, onError: (Object e) => debugPrint('Auralis completion stream: $e'));
   }
 
   Future<void> playTrack(Track track) async {
+    if (_disposed) return;
     final item = track.toItem();
     final old = _queue.indexWhere((x) => x.id == item.id);
     if (old >= 0) { _queue[old] = item; _index = old; }
@@ -118,7 +134,7 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
   }
 
   Future<void> _playIndex(int i) async {
-    if (i < 0 || i >= _queue.length) return;
+    if (_disposed || i < 0 || i >= _queue.length) return;
     _index = i;
     final item = _queue[i];
     final uri = item.extras?['uri'] as String?;
@@ -128,15 +144,26 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
     _ready = false;
     _position = Duration.zero;
     _publish(loading: true);
-    await player.stop();
-    if (kind == 'local') {
-      await player.play(DeviceFileSource(uri));
-    } else {
-      await player.play(UrlSource(uri));
+    try {
+      await player.stop();
+      if (kind == 'local') {
+        await player.play(DeviceFileSource(uri));
+      } else {
+        await player.play(UrlSource(uri));
+      }
+      _ready = true;
+      if (_eqEnabled) {
+        try { await _applyEqualizer(); }
+        on PlatformException catch (e) {
+          debugPrint('Equalizer unavailable; playback continues: ${e.message}');
+        } catch (e) { debugPrint('Equalizer unavailable; playback continues: $e'); }
+      }
+      _publish();
+    } catch (e) {
+      _ready = false;
+      _publish();
+      rethrow;
     }
-    _ready = true;
-    if (_eqEnabled) await _applyEqualizer();
-    _publish();
   }
 
   Future<void> setEqualizer(bool enabled, List<double> gains) async {
@@ -146,7 +173,6 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
   }
 
   Future<void> _applyEqualizer() async {
-    await player.getDuration();
     await _eq.invokeMethod<void>('setEqualizer', {
       'playerId': player.playerId,
       'configuration': {
@@ -178,11 +204,22 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
     ));
   }
 
-  @override Future<void> play() => player.resume();
-  @override Future<void> pause() => player.pause();
-  @override Future<void> seek(Duration position) => player.seek(position);
+  @override Future<void> play() async {
+    if (_disposed) return;
+    try { await player.resume(); } catch (e) { debugPrint('Auralis resume failed: $e'); }
+  }
+  @override Future<void> pause() async {
+    if (_disposed) return;
+    try { await player.pause(); } catch (e) { debugPrint('Auralis pause failed: $e'); }
+  }
+  @override Future<void> seek(Duration position) async {
+    if (_disposed) return;
+    try { await player.seek(position); } catch (e) { debugPrint('Auralis seek failed: $e'); }
+  }
   @override Future<void> stop() async {
-    await player.stop(); _ready = false; await super.stop(); _publish();
+    if (_disposed) return;
+    try { await player.stop(); } catch (e) { debugPrint('Auralis stop failed: $e'); }
+    _ready = false; await super.stop(); _publish();
   }
   @override Future<void> skipToNext() async {
     if (_index + 1 < _queue.length) await _playIndex(_index + 1);
@@ -191,6 +228,8 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
     if (_index > 0) await _playIndex(_index - 1);
   }
   Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
     await _states?.cancel(); await _positions?.cancel();
     await _durations?.cancel(); await _complete?.cancel();
     await player.dispose();
@@ -226,18 +265,28 @@ class _AuralisShellState extends State<AuralisShell> {
 
   @override void initState() { super.initState(); _loadLibrary(); }
   Future<void> _loadLibrary() async {
-    final rows = await LibraryDb.instance.all();
-    if (mounted) setState(() { _library..clear()..addAll(rows); });
+    try {
+      final rows = await LibraryDb.instance.all();
+      if (mounted) setState(() { _library..clear()..addAll(rows); });
+    } catch (e) {
+      debugPrint('Auralis library load failed: $e');
+      if (mounted) setState(() => _error = 'Library could not be loaded. Try again later.');
+    }
   }
   Future<void> _import() async {
-    final files = await FilePicker.pickFiles(type: FileType.audio);
-    for (final f in files) {
+    try {
+      final files = await FilePicker.pickFiles(type: FileType.audio);
+      if (files == null) return;
+      for (final f in files) {
       if (f.path == null) continue;
       await LibraryDb.instance.save(Track(
         id: 'local_${f.path.hashCode}', uri: f.path!, title: f.name,
         artist: 'Local file', kind: 'local'));
+      }
+      await _loadLibrary();
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Audio import failed: $e');
     }
-    await _loadLibrary();
   }
   Future<void> _discover(String query) async {
     if (query.trim().isEmpty) return;
@@ -263,10 +312,12 @@ class _AuralisShellState extends State<AuralisShell> {
     finally { if (mounted) setState(() => _busy = false); }
   }
   Future<void> _save(Track t) async {
-    await LibraryDb.instance.save(t); await _loadLibrary();
+    try { await LibraryDb.instance.save(t); await _loadLibrary(); }
+    catch (e) { if (mounted) setState(() => _error = 'Could not save track: $e'); }
   }
   Future<void> _remove(Track t) async {
-    await LibraryDb.instance.remove(t.id); await _loadLibrary();
+    try { await LibraryDb.instance.remove(t.id); await _loadLibrary(); }
+    catch (e) { if (mounted) setState(() => _error = 'Could not remove track: $e'); }
   }
   Future<void> _showEq() async {
     await Navigator.push<void>(context, MaterialPageRoute(builder: (_) =>
@@ -480,7 +531,7 @@ class _Art extends StatelessWidget {
   @override Widget build(BuildContext context) => ClipRRect(borderRadius: BorderRadius.circular(10),
     child: url == null ? Container(width: size, height: size, color: Colors.white10, child: const Icon(Icons.music_note))
       : Image.network(url!, width: size, height: size, fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(width: size, height: size, color: Colors.white10, child: const Icon(Icons.music_note))));
+        errorBuilder: (context, error, stackTrace) => Container(width: size, height: size, color: Colors.white10, child: const Icon(Icons.music_note))));
 }
 
 class _SettingsPage extends StatelessWidget {
