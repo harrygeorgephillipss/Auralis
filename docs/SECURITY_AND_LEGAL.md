@@ -14,4 +14,4 @@
 
 ## License posture
 
-The current scaffold uses LGPL-3.0-only because Mornye is the planned Flutter/Rust base. This is provisional pending a full asset and dependency audit. If GPL-3.0 Mochy code is copied into the combined application, re-evaluate the distribution license and obligations before publishing.
+Auralis-owned source is currently released under LGPL-3.0-only (see the root LICENSE). The app uses the MIT-licensed audio_service and audioplayers_android packages located in the pinned Mornye submodule. The submodule's root LGPL/GPL licence documents are retained as upstream files; the presence of COPYING is not a relicensing of Auralis. No Mochy GPL-3.0 Kotlin source has been copied. See THIRD_PARTY_NOTICES.md. This remains a preliminary licence review: transitive pub dependencies and provider terms must be audited before public distribution. If GPL-3.0 Mochy code or additional Mornye Rust components are added, re-evaluate the combined work and its source-distribution obligations.
