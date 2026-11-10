@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path("android/app")
 ANDROID = "{http://schemas.android.com/apk/res/android}"
+ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
 
 gradle = ROOT / "build.gradle.kts"
 if not gradle.exists():
@@ -28,7 +29,14 @@ app.set(ANDROID + "icon", "@mipmap/ic_launcher")
 app.set(ANDROID + "roundIcon", "@mipmap/ic_launcher")
 app.set(ANDROID + "usesCleartextTraffic", "false")
 app.set(ANDROID + "allowBackup", "false")
+if app.get(ANDROID + "name") == "io.flutter.app.FlutterApplication":
+    app.set(ANDROID + "name", "${applicationName}")
 root = tree.getroot()
+embedding = next((node for node in app.findall("meta-data") if node.get(ANDROID + "name") == "flutterEmbedding"), None)
+if embedding is None:
+    embedding = ET.SubElement(app, "meta-data")
+    embedding.set(ANDROID + "name", "flutterEmbedding")
+embedding.set(ANDROID + "value", "2")
 existing = {node.get(ANDROID + "name") for node in root.findall("uses-permission")}
 permissions = [
     "android.permission.INTERNET",
