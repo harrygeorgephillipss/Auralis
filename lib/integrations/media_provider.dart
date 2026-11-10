@@ -88,7 +88,7 @@ class ProviderCatalogue {
   }
   void dispose() {
     for (final provider in _registry.providers) {
-      if (provider case DisposableMediaProvider disposable) disposable.dispose();
+      if (provider is DisposableMediaProvider) provider.dispose();
     }
   }
 }
