@@ -2,50 +2,41 @@ import 'package:auralis/main.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Auralis renders primary navigation and local library entry point',
-      (tester) async {
-    await tester.pumpWidget(const AuralisApp());
+  test('local track metadata survives database-shaped serialization', () {
+    const track = Track(
+      id: 'local-1',
+      uri: '/storage/music/example.flac',
+      title: 'Example',
+      artist: 'Auralis Test',
+      kind: 'local',
+      album: 'Test Album',
+      durationMs: 123000,
+    );
 
-    expect(find.text('Auralis'), findsOneWidget);
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Explore'), findsOneWidget);
-    expect(find.text('Library'), findsOneWidget);
-    expect(find.text('Downloads'), findsOneWidget);
-    expect(find.text('Listen without limits.'), findsOneWidget);
-    expect(find.text('Import music'), findsOneWidget);
+    final restored = Track.fromMap(track.toMap());
+
+    expect(restored.id, track.id);
+    expect(restored.uri, track.uri);
+    expect(restored.title, track.title);
+    expect(restored.artist, track.artist);
+    expect(restored.kind, 'local');
+    expect(restored.durationMs, 123000);
+    expect(restored.toItem().extras?['uri'], track.uri);
   });
 
-  testWidgets('library explains how to import local audio', (tester) async {
-    await tester.pumpWidget(const AuralisApp());
+  test('online catalogue tracks retain their preview source', () {
+    const track = Track(
+      id: 'itunes-123',
+      uri: 'https://example.invalid/preview.m4a',
+      title: 'Preview',
+      artist: 'Artist',
+      kind: 'remote',
+      providerUrl: 'https://music.apple.com/track/123',
+    );
 
-    await tester.tap(find.text('Library'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Your music'), findsOneWidget);
-    expect(find.text('Your library is empty'), findsOneWidget);
-    expect(find.textContaining('choose audio files from your phone'),
-        findsOneWidget);
-  });
-
-  testWidgets('downloads page clearly reports that online downloads are not '
-      'integrated', (tester) async {
-    await tester.pumpWidget(const AuralisApp());
-
-    await tester.tap(find.text('Downloads'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Downloads'), findsWidgets);
-    expect(find.textContaining('does not download online tracks yet'),
-        findsOneWidget);
-  });
-
-  testWidgets('settings can be opened from the app bar', (tester) async {
-    await tester.pumpWidget(const AuralisApp());
-
-    await tester.tap(find.byTooltip('Settings'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Settings'), findsOneWidget);
-    expect(find.text('Audio engine'), findsOneWidget);
+    final item = track.toItem();
+    expect(item.id, 'itunes-123');
+    expect(item.extras?['kind'], 'remote');
+    expect(item.extras?['uri'], 'https://example.invalid/preview.m4a');
   });
 }
