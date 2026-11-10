@@ -9,6 +9,7 @@
 - [ ] Android preparation script passes and sets minSdk 28, compileSdk 36 and targetSdk 36.
 - [ ] Android manifest includes the audio_service media playback service, media button receiver and required foreground-service permissions.
 - [ ] Release APK builds and the artifact can be downloaded and opened as a ZIP archive.
+- [ ] Release APK installs and launches on the API 28 Android 9 emulator smoke test.
 - [ ] Dependency and licence inventory is reviewed for the exact release lockfile.
 
 ## Device validation before public release
