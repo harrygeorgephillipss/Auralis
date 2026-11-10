@@ -1,6 +1,6 @@
 # Pinned Mornye upstream source
 
-Auralis uses the Mornye Flutter/Dart application as a candidate technical base. The upstream source is pinned as a Git submodule rather than copied into the Auralis repository in this first integration step.
+Auralis keeps the reviewed Mornye source pinned as a Git submodule. The current Auralis app selectively uses two MIT-licensed packages from that submodule: the audio_service package and the audioplayers_android fork. It does not embed the full Mornye app or its Rust extension runtime.
 
 - Upstream: https://github.com/mornyeapp/Mornye
 - Pinned commit: `e7a8f754a618d28ab0baf88ada3f65ab9d41534a`
@@ -23,7 +23,7 @@ If Auralis is already cloned:
 git submodule update --init --recursive
 ```
 
-The upstream app lives at `upstream/mornye/`. This pin preserves the reviewed source and makes its history auditable. It does **not** mean the Auralis root Flutter app is already integrated with Mornye: `lib/main.dart` is still the initial Auralis shell. The next integration task is to selectively migrate the Android-relevant Flutter code, required assets, platform plugins and Rust/native pieces, then update the root package manifest and run Android builds.
+The upstream source lives at `upstream/mornye/`. This pin preserves the reviewed source and makes its history auditable. Auralis currently depends on `upstream/mornye/third_party/audio_service` and overrides `audioplayers_android` with `upstream/mornye/third_party/audioplayers_android`. The full Mornye player, Rust backend, extension manager and download pipeline remain separate and are not integrated. See `THIRD_PARTY_NOTICES.md` for the current component licence scope.
 
 ## Why a submodule first
 
