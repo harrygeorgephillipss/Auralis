@@ -36,6 +36,9 @@ jobs:
       - name: Accept Android SDK licences
         run: yes | flutter doctor --android-licenses
 
+      - name: Validate Android preparation script
+        run: python3 -m py_compile scripts/prepare_android.py
+
       - name: Generate Android host project
         run: flutter create --platforms=android --org com.auralis --project-name auralis .
 
