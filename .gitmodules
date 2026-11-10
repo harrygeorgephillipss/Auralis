@@ -1,0 +1,3 @@
+[submodule "upstream/mornye"]
+	path = upstream/mornye
+	url = https://github.com/mornyeapp/Mornye.git
