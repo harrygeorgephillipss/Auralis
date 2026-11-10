@@ -53,4 +53,16 @@ void main() {
     );
     expect(track.toItem().duration, Duration.zero);
   });
+
+  test('negative source durations are normalized to zero', () {
+    const track = Track(
+      id: 'bad-duration',
+      uri: 'https://example.invalid/audio.m4a',
+      title: 'Bad duration',
+      artist: 'Artist',
+      kind: 'remote',
+      durationMs: -500,
+    );
+    expect(track.toItem().duration, Duration.zero);
+  });
 }
