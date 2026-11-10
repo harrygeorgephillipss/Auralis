@@ -480,7 +480,7 @@ class _Art extends StatelessWidget {
   @override Widget build(BuildContext context) => ClipRRect(borderRadius: BorderRadius.circular(10),
     child: url == null ? Container(width: size, height: size, color: Colors.white10, child: const Icon(Icons.music_note))
       : Image.network(url!, width: size, height: size, fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(width: size, height: size, color: Colors.white10, child: const Icon(Icons.music_note))));
+        errorBuilder: (_, _, _) => Container(width: size, height: size, color: Colors.white10, child: const Icon(Icons.music_note))));
 }
 
 class _SettingsPage extends StatelessWidget {
