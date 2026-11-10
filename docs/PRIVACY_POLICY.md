@@ -23,7 +23,7 @@ The current Auralis app does not include an Auralis-operated analytics, advertis
 
 ## Retention and deletion
 
-Your imported files and library database remain in the app's private storage until you remove tracks or uninstall the app. Uninstalling Auralis normally removes its private app data.
+Your imported files and library database remain in the app's private storage until you remove tracks or uninstall the app. Android automatic app-data backup is disabled in the current build; Auralis does not provide cloud sync. Uninstalling Auralis normally removes its private app data.
 
 ## Contact
 
