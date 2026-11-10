@@ -39,6 +39,9 @@ jobs:
       - name: Generate Android host project
         run: flutter create --platforms=android --org com.auralis --project-name auralis .
 
+      - name: Configure Android 9+ app, permissions, icon and media service
+        run: python3 scripts/prepare_android.py
+
       - name: Prepare Mornye audio plugin for standalone path dependency
         run: |
           sed -i '/^resolution: workspace$/d' upstream/mornye/third_party/audioplayers_android/pubspec.yaml
