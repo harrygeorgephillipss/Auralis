@@ -1,51 +1,67 @@
 # Source integration plan
 
-## Decision
+## Current technical decision
 
-Use Mornye's Flutter/Dart application as the initial technical base after a deeper module-by-module review. Rework the presentation layer for Auralis rather than shipping Mornye's current interface unchanged.
+Mornye is the chosen Flutter/Rust reference implementation because it is closer to Auralis's target architecture than Mochy's native Kotlin UI. Its exact source commit remains pinned at `upstream/mornye`. Do not treat the submodule pin as a completed integration.
 
-Mochy is an Android/Kotlin project. Because the target is Flutter, do not attempt to embed its Android activities or copy UI classes wholesale. Reimplement selected interaction patterns and user-facing concepts in Flutter. Only consider isolated platform integrations if there is a clear interface boundary and a license review approves it.
+Mochy is Android/Kotlin. Reimplement selected interaction patterns in Flutter; do not copy its Android activities or screen classes into the Flutter app. Any later source reuse needs a file-by-file license and provenance review.
 
 ## Phase 0 — preserve and audit
 
-- Keep both uploaded archives unchanged as reference snapshots.
-- Record exact upstream repository URLs, versions, commit IDs (where recoverable), authors and license notices.
-- Inventory direct and transitive dependencies, native libraries, provider extensions and bundled assets.
+- Keep the uploaded ZIP archives unchanged as reference snapshots.
+- Record upstream URLs, versions, exact source commits and license notices.
+- Inventory direct/transitive dependencies, native libraries, provider extensions and bundled assets.
 - Review privacy, telemetry, authentication, provider terms and download behavior.
-- Build each upstream project independently before making modifications.
+- Build each upstream project independently before migration.
 
-## Phase 1 — Auralis foundation
+## Phase 1 — Android foundation (current priority)
 
-- Rebrand package metadata, app label, launcher assets and documentation.
-- Retain Mornye's proven Flutter/Rust build integration selectively.
-- Remove desktop/iOS-only code and dependencies from the Android-first product only after confirming they are not shared by Android features.
-- Create feature boundaries and domain contracts.
-- Establish CI for formatting, static analysis, unit tests and Android debug builds.
+1. Establish a reproducible Flutter/Android CI toolchain.
+2. Add and validate the Android host project and stable Auralis application ID.
+3. Build the untouched pinned Mornye app before changing it; record all build failures and toolchain requirements.
+4. Inventory Android-relevant pub dependencies and local plugins; exclude unsupported desktop and Apple targets deliberately, not by deleting shared code.
+5. Review and gate optional partner SDKs, provider modules and proprietary assets.
+6. Integrate the selected app bootstrap and native platform configuration in small commits.
 
-## Phase 2 — UI redesign
+## Phase 2 — application architecture
 
-- Build a distinct Auralis design system: typography, spacing, surfaces, motion and artwork treatment.
+- Define domain contracts for Track, Album, Artist, Provider, AudioSource, PlaybackState and DownloadTask.
+- Keep providers, storage and player implementations behind interfaces.
+- Adopt state management and routing only after comparing the pinned upstream choices with a minimal Auralis dependency graph.
+- Add logging with secret redaction, cancellation, typed failures and lifecycle handling.
+
+## Phase 3 — UI and customization
+
+- Build the Auralis design system: typography, spacing, surfaces, motion and artwork treatment.
 - Implement Home, Explore, Library, Downloads, Now Playing and Settings.
-- Add customization controls for themes, player layouts, artwork, visualizer and motion intensity.
-- Test on small, medium and large Android screens and with accessibility font scaling.
+- Add themes, player layouts, artwork treatment and visualizer settings.
+- Validate small/large screens, landscape, accessibility font scaling and reduced motion.
 
-## Phase 3 — audio and local library
+## Phase 4 — local playback and library
 
-- Integrate background playback, Android media controls, notification, audio focus and headset actions.
-- Implement local file scanning and metadata.
-- Add queue, playlists, history, favorites and search.
-- Validate lifecycle handling and recovery after process death.
+- Integrate playback, Android media session, foreground service/notification, audio focus and headset actions.
+- Add local file access via Android Storage Access Framework / supported media APIs.
+- Implement queue, playlists, metadata, history, favorites and search.
+- Test interruption handling, process death, app restart, Bluetooth and wired headsets.
 
-## Phase 4 — providers and downloads
+## Phase 5 — authorized providers and downloads
 
-- Port or adapt only provider modules whose terms allow the intended use.
-- Add extension permissions, signing/versioning and sandboxing strategy.
-- Implement a download queue with pause/resume, integrity checks, storage management and clear source attribution.
-- Respect provider authorization, copyright, DRM and access controls.
+- Port/adapt only providers whose terms allow the product's intended use.
+- Treat extensions as untrusted code/data; define permissions, signing, update validation and isolation.
+- Implement pause/resume, cancellation, integrity checks, storage policy and source attribution.
+- Never bypass DRM, subscriptions, authentication or other access controls.
+- Preserve the source bytes and report only verified codec/quality metadata.
 
-## Phase 5 — release readiness
+## Phase 6 — release readiness
 
-- Add automated tests and device matrix.
-- Perform security and privacy review.
-- Publish license notices, dependency inventory and source attribution.
-- Create signed release builds and reproducible build instructions.
+- Add unit, widget, integration and device tests.
+- Run Android debug and release builds on CI.
+- Complete security, privacy, dependency and license audits.
+- Publish notices, SBOM/dependency inventory and reproducible build steps.
+- Produce signed builds only with owner-controlled signing material.
+
+## Explicit non-goals
+
+- No claim that Auralis is a working streaming/downloading app until providers and playback are implemented and tested.
+- No APK release until Android build, permissions, background playback and licensing checks pass.
+- No redistribution of bundled partner SDKs or proprietary artwork without explicit rights.
