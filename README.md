@@ -4,7 +4,7 @@ Auralis is an Android-first, open-source music player project built with Flutter
 
 <badge>Engineering preview</badge>
 
-**Current state:** Auralis is a tested Flutter UI shell. It is not yet a functional player, streaming client or downloader. The Android host project and upstream playback integration are not yet present in the root app.
+**Current state (0.2.0):** Auralis can import audio files through Android's system file picker and play them locally with an embedded player, queue navigation and seek control. The online catalogue, provider extensions, background media session, equalizer and authorized online downloads are not integrated yet. This is an early functional preview, not the completed merged product.
 
 ## Project goals
 
@@ -24,9 +24,9 @@ Auralis is an Android-first, open-source music player project built with Flutter
 | UI | Flutter / Dart |
 | State | Riverpod (to be integrated after architecture review) |
 | Navigation | GoRouter (to be integrated after architecture review) |
-| Android playback | Android media session + a maintained Flutter audio integration |
+| Local playback | `audioplayers` (same playback package used by Mornye) |
 | Persistence | SQLite |
-| Native audio / provider operations | Evaluate Mornye's existing Rust crates before reimplementation |
+| Native audio / provider operations | Mornye Rust bridge and extension system remain under integration review |
 | CI | GitHub Actions |
 
 ## Repository layout
@@ -64,7 +64,7 @@ Mornye is pinned as a Git submodule at `upstream/mornye` so the reviewed upstrea
 git clone --recurse-submodules https://github.com/harrygeorgephillipss/Auralis.git
 ```
 
-If already cloned, run `git submodule update --init --recursive`. See [the upstream pin](docs/UPSTREAM_PIN.md) and [Android port checklist](docs/ANDROID_PORT_CHECKLIST.md). The root Auralis app is a starter shell; the Mornye app has not yet been migrated into the root Flutter package.
+If already cloned, run `git submodule update --init --recursive`. See [the upstream pin](docs/UPSTREAM_PIN.md) and [Android port checklist](docs/ANDROID_PORT_CHECKLIST.md). The root Auralis app currently has a working local-file playback slice. Mornye's wider library, extension, Rust backend, notification and download modules have not yet been migrated.
 
 ## Getting started
 
