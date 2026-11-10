@@ -84,13 +84,16 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
   final List<MediaItem> _queue = [];
   int _index = -1;
   bool _ready = false;
+  bool _eqEnabled = false;
+  List<double> _eqGains = List<double>.filled(5, 0);
+  Duration _position = Duration.zero;
   StreamSubscription<PlayerState>? _states;
   StreamSubscription<Duration>? _positions, _durations;
   StreamSubscription<void>? _complete;
 
   AuralisAudioHandler() {
     _states = player.onPlayerStateChanged.listen((_) => _publish());
-    _positions = player.onPositionChanged.listen((_) => _publish());
+    _positions = player.onPositionChanged.listen((position) { _position = position; _publish(); });
     _durations = player.onDurationChanged.listen((d) {
       final item = mediaItem.value;
       if (item != null) mediaItem.add(item.copyWith(duration: d));
@@ -123,6 +126,7 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
     if (uri == null) return;
     mediaItem.add(item);
     _ready = false;
+    _position = Duration.zero;
     _publish(loading: true);
     await player.stop();
     if (kind == 'local') {
@@ -131,17 +135,24 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
       await player.play(UrlSource(uri));
     }
     _ready = true;
+    if (_eqEnabled) await _applyEqualizer();
     _publish();
   }
 
   Future<void> setEqualizer(bool enabled, List<double> gains) async {
+    _eqEnabled = enabled;
+    _eqGains = List<double>.from(gains);
+    if (_ready) await _applyEqualizer();
+  }
+
+  Future<void> _applyEqualizer() async {
     await player.getDuration();
     await _eq.invokeMethod<void>('setEqualizer', {
       'playerId': player.playerId,
       'configuration': {
-        'enabled': enabled,
+        'enabled': _eqEnabled,
         'frequencies': [63.0, 250.0, 1000.0, 4000.0, 16000.0],
-        'gains': gains, 'inputGain': 0.0, 'balance': 0.0,
+        'gains': _eqGains, 'inputGain': 0.0, 'balance': 0.0,
         'compressor': false, 'limiter': true,
         'threshold': -18.0, 'ratio': 3.0, 'attack': 10.0, 'release': 150.0,
       },
@@ -160,7 +171,7 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
         loading ? AudioProcessingState.loading :
         _ready ? AudioProcessingState.ready : AudioProcessingState.idle,
       playing: playing,
-      updatePosition: Duration.zero,
+      updatePosition: _position,
       bufferedPosition: Duration.zero,
       speed: 1.0,
       queueIndex: _index < 0 ? null : _index,
