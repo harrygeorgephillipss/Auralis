@@ -2,7 +2,7 @@ enum DownloadTaskStatus { queued, running, paused, completed, failed, cancelled 
 
 /// Only enqueue after the provider has confirmed offline saving is permitted.
 class DownloadRequest {
-  const DownloadRequest({required this.id, required this.providerId, required this.source, required this.fileName, this.expectedBytes, this.mimeType});
+  const DownloadRequest({required this.id, required this.providerId, required this.source, required this.fileName, this.expectedBytes, this.mimeType, required this.offlineSavingAllowed});
   final String id;
   final String providerId;
   final Uri source;
