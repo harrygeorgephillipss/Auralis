@@ -98,3 +98,31 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
+
+  smoke-test-android-9:
+    needs: build-release-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Download release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: auralis-android-release
+          path: build
+
+      - name: Install and launch on Android 9 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          arch: x86_64
+          profile: pixel_2
+          script: |
+            adb logcat -c
+            adb install -r build/app-release.apk
+            adb shell am start -n com.auralis.auralis/.MainActivity
+            sleep 10
+            adb shell pidof com.auralis.auralis
+            if adb logcat -d -s AndroidRuntime:E | grep -q "FATAL EXCEPTION"; then
+              adb logcat -d -s AndroidRuntime:E
+              exit 1
+            fi
