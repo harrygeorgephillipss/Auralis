@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
@@ -7,21 +8,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 const _eq = MethodChannel('xyz.luan/audioplayers');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final handler = await AudioService.init(
-    builder: AuralisAudioHandler.new,
-    config: AudioServiceConfig(
-      androidNotificationChannelId: 'com.auralis.playback',
-      androidNotificationChannelName: 'Auralis playback',
-      androidNotificationOngoing: true,
-      androidStopForegroundOnPause: false,
-    ),
-  );
+  try {
+    final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration.music());
+  } catch (error) {
+    debugPrint('Auralis audio-session setup unavailable: $error');
+  }
+  late final AuralisAudioHandler handler;
+  try {
+    handler = await AudioService.init(
+      builder: AuralisAudioHandler.new,
+      config: AudioServiceConfig(
+        androidNotificationChannelId: 'com.auralis.playback',
+        androidNotificationChannelName: 'Auralis playback',
+        androidNotificationOngoing: true,
+        androidStopForegroundOnPause: false,
+      ),
+    );
+  } catch (error, stack) {
+    debugPrint('Auralis media service unavailable; using in-app playback: $error\\n$stack');
+    handler = AuralisAudioHandler();
+  }
   try {
     await LibraryDb.instance.open();
   } catch (error, stack) {
@@ -65,14 +79,23 @@ class LibraryDb {
   LibraryDb._();
   static final instance = LibraryDb._();
   Database? _db;
+  Future<Database>? _opening;
   Future<void> open() async {
-    if (_db != null && _db!.isOpen) return;
-    _db = await openDatabase(p.join(await getDatabasesPath(), 'auralis.db'),
+    if (_db?.isOpen ?? false) return;
+    final pending = _opening;
+    if (pending != null) {
+      _db = await pending;
+      return;
+    }
+    final future = openDatabase(p.join(await getDatabasesPath(), 'auralis.db'),
       version: 1, onCreate: (db, _) => db.execute('''
         CREATE TABLE tracks(id TEXT PRIMARY KEY, uri TEXT NOT NULL,
         title TEXT NOT NULL, artist TEXT NOT NULL, kind TEXT NOT NULL,
         album TEXT, artwork TEXT, duration_ms INTEGER, provider_url TEXT)
       '''));
+    _opening = future;
+    try { _db = await future; }
+    finally { _opening = null; }
   }
   Future<Database> get database async {
     if (_db == null || !_db!.isOpen) await open();
@@ -130,7 +153,12 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
     if (old >= 0) { _queue[old] = item; _index = old; }
     else { _queue.add(item); _index = _queue.length - 1; }
     queue.add(List.unmodifiable(_queue));
-    await _playIndex(_index);
+    try { await _playIndex(_index); }
+    catch (error) {
+      debugPrint('Auralis could not play "${track.title}": $error');
+      _ready = false;
+      _publish();
+    }
   }
 
   Future<void> _playIndex(int i) async {
@@ -170,8 +198,11 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
   }
 
   Future<void> setEqualizer(bool enabled, List<double> gains) async {
+    if (gains.length != 5 || gains.any((value) => !value.isFinite)) {
+      throw ArgumentError('The equalizer requires five finite gain values.');
+    }
     _eqEnabled = enabled;
-    _eqGains = List<double>.from(gains);
+    _eqGains = gains.map((value) => value.clamp(-12.0, 12.0).toDouble()).toList();
     if (_ready) await _applyEqualizer();
   }
 
@@ -226,10 +257,16 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
     _ready = false; await super.stop(); _publish();
   }
   @override Future<void> skipToNext() async {
-    if (_index + 1 < _queue.length) await _playIndex(_index + 1);
+    if (_index + 1 < _queue.length) {
+      try { await _playIndex(_index + 1); }
+      catch (error) { debugPrint('Auralis next track failed: $error'); }
+    }
   }
   @override Future<void> skipToPrevious() async {
-    if (_index > 0) await _playIndex(_index - 1);
+    if (_index > 0) {
+      try { await _playIndex(_index - 1); }
+      catch (error) { debugPrint('Auralis previous track failed: $error'); }
+    }
   }
   Future<void> dispose() async {
     if (_disposed) return;
@@ -238,6 +275,81 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
     await _durations?.cancel(); await _complete?.cancel();
     await player.dispose();
   }
+}
+
+class _LaunchGate extends StatefulWidget {
+  const _LaunchGate({required this.handler});
+  final AuralisAudioHandler handler;
+  @override State<_LaunchGate> createState() => _LaunchGateState();
+}
+
+class _LaunchGateState extends State<_LaunchGate> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool _complete = false;
+
+  @override void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this,
+      duration: const Duration(milliseconds: 1350))..forward();
+    Future<void>.delayed(const Duration(milliseconds: 1650), () {
+      if (mounted) setState(() => _complete = true);
+    });
+  }
+
+  @override void dispose() { _controller.dispose(); super.dispose(); }
+
+  @override Widget build(BuildContext context) {
+    if (_complete) return AuralisShell(handler: widget.handler);
+    return Scaffold(backgroundColor: const Color(0xFF0D0E10),
+      body: Center(child: AnimatedBuilder(animation: _controller, builder: (context, child) {
+        final progress = Curves.easeInOutCubic.transform(_controller.value);
+        return Opacity(opacity: Curves.easeOut.transform(_controller.value),
+          child: Transform.scale(scale: .92 + (.08 * progress),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              SizedBox(width: 112, height: 112,
+                child: CustomPaint(painter: AuralisMarkPainter(progress: progress))),
+              const SizedBox(height: 24),
+              const Text('AURALIS', style: TextStyle(fontSize: 17,
+                letterSpacing: 5.5, fontWeight: FontWeight.w500, color: Colors.white)),
+              const SizedBox(height: 8),
+              const Text('MUSIC, IN ITS ELEMENT',
+                style: TextStyle(fontSize: 9, letterSpacing: 2.3, color: Colors.white54)),
+            ]),
+          ),
+        );
+      })),
+    );
+  }
+}
+
+class AuralisMarkPainter extends CustomPainter {
+  const AuralisMarkPainter({required this.progress});
+  final double progress;
+
+  @override void paint(Canvas canvas, Size size) {
+    final scale = size.width / 128;
+    canvas.save();
+    canvas.scale(scale, size.height / 128);
+    final paint = Paint()..color = Colors.white..style = PaintingStyle.stroke
+      ..strokeWidth = 7.5..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round;
+    final mark = Path()
+      ..moveTo(19, 91)
+      ..cubicTo(34, 65, 45, 37, 58, 17)
+      ..cubicTo(61, 12, 67, 12, 70, 18)
+      ..lineTo(109, 91);
+    final metric = mark.computeMetrics().first;
+    canvas.drawPath(metric.extractPath(0, metric.length * progress.clamp(0.0, 1.0)), paint);
+    if (progress > .48) {
+      final bar = Path()..moveTo(42, 66)..lineTo(84, 66);
+      final barMetric = bar.computeMetrics().first;
+      final barProgress = ((progress - .48) / .52).clamp(0.0, 1.0);
+      canvas.drawPath(barMetric.extractPath(0, barMetric.length * barProgress), paint);
+    }
+    canvas.restore();
+  }
+
+  @override bool shouldRepaint(covariant AuralisMarkPainter oldDelegate) =>
+    oldDelegate.progress != progress;
 }
 
 class AuralisApp extends StatelessWidget {
@@ -249,7 +361,7 @@ class AuralisApp extends StatelessWidget {
       scaffoldBackgroundColor: const Color(0xFF0D0E10),
       colorScheme: const ColorScheme.dark(primary: Color(0xFFE5E7EB),
         surface: Color(0xFF17191D)), useMaterial3: true),
-    home: AuralisShell(handler: handler),
+    home: _LaunchGate(handler: handler),
   );
 }
 
@@ -265,6 +377,7 @@ class _AuralisShellState extends State<AuralisShell> {
   int _tab = 0;
   bool _busy = false, _eqEnabled = false;
   String? _error;
+  int _searchSequence = 0;
   List<double> _gains = List<double>.filled(5, 0);
 
   @override void initState() { super.initState(); _loadLibrary(); }
@@ -280,21 +393,39 @@ class _AuralisShellState extends State<AuralisShell> {
   Future<void> _import() async {
     try {
       final files = await FilePicker.pickFiles(type: FileType.audio);
-      if (!mounted) return;
-      for (final f in files) {
-      if (f.path == null) continue;
-      await LibraryDb.instance.save(Track(
-        id: 'local_${f.path.hashCode}', uri: f.path!, title: f.name,
-        artist: 'Local file', kind: 'local'));
+      if (!mounted || files.isEmpty) return;
+      final appDirectory = await getApplicationDocumentsDirectory();
+      final musicDirectory = Directory(p.join(appDirectory.path, 'music'));
+      await musicDirectory.create(recursive: true);
+      var imported = 0;
+      for (final file in files) {
+        final sourcePath = file.path;
+        if (sourcePath == null) continue;
+        final source = File(sourcePath);
+        if (!await source.exists()) continue;
+        final safeName = p.basename(file.name).replaceAll(RegExp(r'[^A-Za-z0-9._ -]'), '_');
+        final destination = p.join(musicDirectory.path,
+          '${DateTime.now().microsecondsSinceEpoch}_$safeName');
+        final stored = await source.copy(destination);
+        await LibraryDb.instance.save(Track(
+          id: 'local_${p.basename(destination)}', uri: stored.path,
+          title: p.basenameWithoutExtension(file.name),
+          artist: 'Local file', kind: 'local'));
+        imported++;
       }
       await _loadLibrary();
+      if (mounted && imported == 0) {
+        setState(() => _error = 'No readable audio files were imported.');
+      }
     } catch (e) {
       if (mounted) setState(() => _error = 'Audio import failed: $e');
     }
   }
   Future<void> _discover(String query) async {
     if (query.trim().isEmpty) return;
+    final request = ++_searchSequence;
     setState(() { _busy = true; _error = null; _results.clear(); });
+    final found = <Track>[];
     try {
       final uri = Uri.https('itunes.apple.com', '/search',
         {'term': query.trim(), 'entity': 'song', 'limit': '30'});
@@ -302,9 +433,11 @@ class _AuralisShellState extends State<AuralisShell> {
       if (response.statusCode != 200) throw Exception('Catalogue HTTP ${response.statusCode}');
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       for (final row in (data['results'] as List<dynamic>? ?? [])) {
-        if (row is! Map<String, dynamic> || row['previewUrl'] == null || row['trackId'] == null) continue;
-        _results.add(Track(
-          id: 'itunes_${row['trackId']}', uri: row['previewUrl'] as String,
+        if (row is! Map<String, dynamic> || row['previewUrl'] is! String || row['trackId'] == null) continue;
+        final previewUri = Uri.tryParse(row['previewUrl'] as String);
+        if (previewUri == null || previewUri.scheme != 'https') continue;
+        found.add(Track(
+          id: 'itunes_${row['trackId']}', uri: previewUri.toString(),
           title: row['trackName'] as String? ?? 'Unknown title',
           artist: row['artistName'] as String? ?? 'Unknown artist',
           album: row['collectionName'] as String? ?? '',
@@ -313,9 +446,14 @@ class _AuralisShellState extends State<AuralisShell> {
           kind: 'remote', providerUrl: row['trackViewUrl'] as String?));
       }
     } on TimeoutException {
-      _error = 'The catalogue request timed out. Check your connection and retry.';
-    } catch (e) { _error = 'Search failed: $e'; }
-    finally { if (mounted) setState(() => _busy = false); }
+      if (request == _searchSequence) _error = 'The catalogue request timed out. Check your connection and retry.';
+    } catch (e) {
+      if (request == _searchSequence) _error = 'Search failed: $e';
+    } finally {
+      if (mounted && request == _searchSequence) {
+        setState(() { _results..clear()..addAll(found); _busy = false; });
+      }
+    }
   }
   Future<void> _save(Track t) async {
     try { await LibraryDb.instance.save(t); await _loadLibrary(); }
@@ -347,8 +485,9 @@ class _AuralisShellState extends State<AuralisShell> {
       const _DownloadsPage(),
     ];
     return Scaffold(
-      appBar: AppBar(title: const Text('Auralis',
-        style: TextStyle(fontWeight: FontWeight.w700)),
+      appBar: AppBar(leading: const Padding(padding: EdgeInsets.all(12),
+        child: CustomPaint(painter: AuralisMarkPainter(progress: 1))),
+        title: const Text('Auralis', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
           IconButton(tooltip: 'Equalizer', onPressed: _showEq,
             icon: const Icon(Icons.equalizer_rounded)),
@@ -543,10 +682,17 @@ class _Art extends StatelessWidget {
 class _SettingsPage extends StatelessWidget {
   const _SettingsPage();
   @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Settings')),
-    body: ListView(children: const [
-      ListTile(leading: Icon(Icons.storage), title: Text('Persistent library'), subtitle: Text('SQLite database on this device')),
-      ListTile(leading: Icon(Icons.notifications_active), title: Text('Background playback'), subtitle: Text('Media session and Android notification')),
-      ListTile(leading: Icon(Icons.extension), title: Text('Provider extensions'), subtitle: Text('Mornye extension runtime integration is still pending')),
+    body: ListView(children: [
+      const ListTile(leading: Icon(Icons.storage), title: Text('Persistent library'), subtitle: Text('Imported audio is copied into app-private storage')),
+      const ListTile(leading: Icon(Icons.notifications_active), title: Text('Background playback'), subtitle: Text('Media session and Android notification')),
+      const ListTile(leading: Icon(Icons.extension), title: Text('Provider extensions'), subtitle: Text('Full Mornye extension runtime is not yet integrated')),
+      ListTile(leading: const Icon(Icons.info_outline), title: const Text('About Auralis'),
+        subtitle: const Text('Version, acknowledgements and open-source licences'),
+        onTap: () => showAboutDialog(context: context, applicationName: 'Auralis',
+          applicationVersion: '0.4.0', applicationLegalese: 'Auralis is licensed under LGPL-3.0-only. Third-party notices are available in the source repository.')),
+      ListTile(leading: const Icon(Icons.policy_outlined), title: const Text('Open-source licences'),
+        onTap: () => showLicensePage(context: context, applicationName: 'Auralis', applicationVersion: '0.4.0',
+          applicationLegalese: 'Auralis source: LGPL-3.0-only. See THIRD_PARTY_NOTICES.md for upstream attributions.')),
     ]));
 }
 
