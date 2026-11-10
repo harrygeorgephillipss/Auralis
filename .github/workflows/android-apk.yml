@@ -43,7 +43,11 @@ jobs:
         run: flutter create --platforms=android --org com.auralis --project-name auralis .
 
       - name: Configure Android 9+ app, permissions, icon and media service
-        run: python3 scripts/prepare_android.py
+        run: |
+          python3 scripts/prepare_android.py
+          grep -q 'minSdk = 28' android/app/build.gradle.kts
+          grep -q 'compileSdk = 36' android/app/build.gradle.kts
+          grep -q 'com.ryanheise.audioservice.AudioService' android/app/src/main/AndroidManifest.xml
 
       - name: Prepare Mornye audio plugin for standalone path dependency
         run: |
