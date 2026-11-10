@@ -50,7 +50,7 @@ jobs:
           grep -q 'compileSdk = 37' android/app/build.gradle.kts
 
       - name: Install Android SDK 37
-        run: sdkmanager "platforms;android-37" "build-tools;37.0.0"
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37" "build-tools;37.0.0"
 
       - name: Resolve Flutter dependencies
         run: flutter pub get
