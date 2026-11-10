@@ -93,7 +93,6 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
   int _index = -1;
   bool _ready = false;
   bool _disposed = false;
-  Future<void> _operation = Future<void>.value();
   int _playRequest = 0;
   bool _eqEnabled = false;
   List<double> _eqGains = List<double>.filled(5, 0);
@@ -281,7 +280,7 @@ class _AuralisShellState extends State<AuralisShell> {
   Future<void> _import() async {
     try {
       final files = await FilePicker.pickFiles(type: FileType.audio);
-      if (files == null || !mounted) return;
+      if (!mounted) return;
       for (final f in files) {
       if (f.path == null) continue;
       await LibraryDb.instance.save(Track(
