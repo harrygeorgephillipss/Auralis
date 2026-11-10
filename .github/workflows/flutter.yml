@@ -19,5 +19,6 @@ jobs:
         run: dart format lib test
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed lib test
-      - run: flutter analyze
+      - name: Analyze Auralis-owned Dart code
+        run: flutter analyze lib test
       - run: flutter test
