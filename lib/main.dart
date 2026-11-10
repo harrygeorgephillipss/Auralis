@@ -461,8 +461,21 @@ class _AuralisShellState extends State<AuralisShell> {
     catch (e) { if (mounted) setState(() => _error = 'Could not save track: $e'); }
   }
   Future<void> _remove(Track t) async {
-    try { await LibraryDb.instance.remove(t.id); await _loadLibrary(); }
-    catch (e) { if (mounted) setState(() => _error = 'Could not remove track: $e'); }
+    try {
+      await LibraryDb.instance.remove(t.id);
+      if (t.kind == 'local') {
+        final appDirectory = await getApplicationDocumentsDirectory();
+        final musicRoot = p.normalize(p.join(appDirectory.path, 'music'));
+        final candidate = p.normalize(t.uri);
+        if (p.isWithin(musicRoot, candidate)) {
+          final file = File(candidate);
+          if (await file.exists()) await file.delete();
+        }
+      }
+      await _loadLibrary();
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Could not remove track: $e');
+    }
   }
   Future<void> _showEq() async {
     await Navigator.push<void>(context, MaterialPageRoute(builder: (_) =>
