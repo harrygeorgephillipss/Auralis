@@ -35,12 +35,30 @@ permissions = [
     "android.permission.FOREGROUND_SERVICE",
     "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
     "android.permission.POST_NOTIFICATIONS",
+    "android.permission.MODIFY_AUDIO_SETTINGS",
 ]
 for permission in permissions:
     if permission not in existing:
         node = ET.Element("uses-permission")
         node.set(ANDROID + "name", permission)
         root.insert(0, node)
+# audio_service has an empty plugin manifest, so declare its Android service explicitly.
+if not any(node.tag == "service" and node.get(ANDROID + "name") == "com.ryanheise.audioservice.AudioService" for node in app.findall("service")):
+    service = ET.SubElement(app, "service", {
+        ANDROID + "name": "com.ryanheise.audioservice.AudioService",
+        ANDROID + "foregroundServiceType": "mediaPlayback",
+        ANDROID + "exported": "true",
+        ANDROID + "enabled": "true",
+    })
+    intent = ET.SubElement(service, "intent-filter")
+    ET.SubElement(intent, "action", {ANDROID + "name": "android.media.browse.MediaBrowserService"})
+if not any(node.tag == "receiver" and node.get(ANDROID + "name") == "com.ryanheise.audioservice.MediaButtonReceiver" for node in app.findall("receiver")):
+    receiver = ET.SubElement(app, "receiver", {
+        ANDROID + "name": "com.ryanheise.audioservice.MediaButtonReceiver",
+        ANDROID + "exported": "true",
+    })
+    intent = ET.SubElement(receiver, "intent-filter")
+    ET.SubElement(intent, "action", {ANDROID + "name": "android.intent.action.MEDIA_BUTTON"})
 ET.indent(tree, space="    ")
 tree.write(manifest, encoding="utf-8", xml_declaration=True)
 
