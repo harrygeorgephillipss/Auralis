@@ -1,7 +1,7 @@
 name: auralis
 description: An Android-first, open-source music player.
 publish_to: "none"
-version: 0.3.0+3
+version: 0.4.0+4
 environment:
   sdk: "^3.10.0"
 dependencies:
@@ -28,3 +28,5 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 flutter:
   uses-material-design: true
+  assets:
+    - assets/branding/
