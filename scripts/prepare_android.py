@@ -11,9 +11,9 @@ gradle = ROOT / "build.gradle.kts"
 if not gradle.exists():
     raise SystemExit("android/app/build.gradle.kts was not generated")
 text = gradle.read_text()
-text = re.sub(r"compileSdk\\s*=\\s*[^\\n]+", "compileSdk = 36", text, count=1)
-text = re.sub(r"minSdk\\s*=\\s*[^\\n]+", "minSdk = 28", text, count=1)
-text = re.sub(r"targetSdk\\s*=\\s*[^\\n]+", "targetSdk = 36", text, count=1)
+text = re.sub(r"compileSdk\s*=\s*[^\n]+", "compileSdk = 36", text, count=1)
+text = re.sub(r"minSdk\s*=\s*[^\n]+", "minSdk = 28", text, count=1)
+text = re.sub(r"targetSdk\s*=\s*[^\n]+", "targetSdk = 36", text, count=1)
 if "minSdk = 28" not in text or "compileSdk = 36" not in text:
     raise SystemExit("Could not set Android SDK levels")
 gradle.write_text(text)
