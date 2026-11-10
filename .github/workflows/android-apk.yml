@@ -48,6 +48,9 @@ jobs:
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle.kts
           sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 36/' android/app/build.gradle.kts
           grep -q 'compileSdk = 36' android/app/build.gradle.kts
+          sed -i 's/compileSdk = 37/compileSdk = 36/' upstream/mornye/third_party/audio_service/android/build.gradle.kts
+          sed -i 's/compileSdk 37/compileSdk 36/' upstream/mornye/third_party/audioplayers_android/android/build.gradle
+          sed -i 's/1.19.1/1.17.0/g; s/1.8.0/1.7.0/g' upstream/mornye/third_party/audio_service/android/build.gradle.kts upstream/mornye/third_party/audioplayers_android/android/build.gradle
 
       - name: Use installed Android SDK 36 with compatible AndroidX dependencies
         run: echo "Using runner-provided Android SDK 36"
