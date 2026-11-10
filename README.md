@@ -10,6 +10,7 @@ Auralis is an Android-first music player built with Flutter. Its current release
 - Android background playback media session and notification controls.
 - Five-band Android equalizer through the native Mornye-derived Android audio plugin fork, where supported.
 - Android 9+ minimum (API 28), with an adaptive monochrome launcher icon and animated Auralis splash screen.
+- In-app LGPL and third-party licence notices under Settings → Open-source licences.
 
 ## Important feature limits
 
