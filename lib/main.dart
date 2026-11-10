@@ -395,7 +395,7 @@ class AuralisShell extends StatefulWidget {
 
 class _AuralisShellState extends State<AuralisShell> {
   final _search = TextEditingController();
-  final ItunesPreviewProvider _catalogue = ItunesPreviewProvider();
+  final ProviderCatalogue _catalogue = ProviderCatalogue([ItunesPreviewProvider()]);
   final List<Track> _library = [], _results = [];
   int _tab = 0;
   bool _busy = false, _eqEnabled = false;
@@ -450,9 +450,10 @@ class _AuralisShellState extends State<AuralisShell> {
     setState(() { _busy = true; _error = null; _results.clear(); });
     final found = <Track>[];
     try {
-      final page = await _catalogue.search(query, limit: 30);
-      for (final item in page.tracks) {
-        final source = await _catalogue.resolveStream(item);
+      final page = await _catalogue.search(query, limitPerProvider: 30);
+      for (final match in page) {
+        final item = match.track;
+        final source = await _catalogue.resolve(item);
         found.add(Track(
           id: item.stableId, uri: source.uri.toString(),
           title: item.title, artist: item.artist,
