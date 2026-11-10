@@ -15,7 +15,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final handler = await AudioService.init(
     builder: AuralisAudioHandler.new,
-    config: const AudioServiceConfig(
+    config: AudioServiceConfig(
       androidNotificationChannelId: 'com.auralis.playback',
       androidNotificationChannelName: 'Auralis playback',
       androidNotificationOngoing: true,
@@ -23,7 +23,7 @@ Future<void> main() async {
     ),
   );
   await LibraryDb.instance.open();
-  runApp(AuralisApp(handler: handler as AuralisAudioHandler));
+  runApp(AuralisApp(handler: handler));
 }
 
 class Track {
@@ -219,10 +219,8 @@ class _AuralisShellState extends State<AuralisShell> {
     if (mounted) setState(() { _library..clear()..addAll(rows); });
   }
   Future<void> _import() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.audio, allowMultiple: true, withData: false);
-    if (result == null) return;
-    for (final f in result.files) {
+    final files = await FilePicker.pickFiles(type: FileType.audio);
+    for (final f in files) {
       if (f.path == null) continue;
       await LibraryDb.instance.save(Track(
         id: 'local_${f.path.hashCode}', uri: f.path!, title: f.name,
@@ -477,7 +475,7 @@ class _Art extends StatelessWidget {
 class _SettingsPage extends StatelessWidget {
   const _SettingsPage();
   @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Settings')),
-    body: const ListView(children: [
+    body: ListView(children: const [
       ListTile(leading: Icon(Icons.storage), title: Text('Persistent library'), subtitle: Text('SQLite database on this device')),
       ListTile(leading: Icon(Icons.notifications_active), title: Text('Background playback'), subtitle: Text('Media session and Android notification')),
       ListTile(leading: Icon(Icons.extension), title: Text('Provider extensions'), subtitle: Text('Mornye extension runtime integration is still pending')),
