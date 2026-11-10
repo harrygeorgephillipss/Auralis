@@ -3,7 +3,18 @@ name: Flutter checks
 on:
   push:
     branches: [main]
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/flutter.yml'
+      - '.gitmodules'
+      - 'upstream/mornye'
   pull_request:
+
+concurrency:
+  group: auralis-flutter-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
