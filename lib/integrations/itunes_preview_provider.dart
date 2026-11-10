@@ -6,7 +6,7 @@ import 'media_provider.dart';
 
 /// iTunes Search API adapter. It exposes Apple's 30-second preview URLs only;
 /// it does not claim full-track streaming or offline-download permission.
-class ItunesPreviewProvider implements MediaProvider {
+class ItunesPreviewProvider implements MediaProvider, DisposableMediaProvider {
   ItunesPreviewProvider({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
@@ -61,5 +61,6 @@ class ItunesPreviewProvider implements MediaProvider {
     return ResolvedMediaSource(uri: track.previewUri!, mimeType: 'audio/mp4');
   }
 
+  @override
   void dispose() => _client.close();
 }
