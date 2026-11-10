@@ -56,7 +56,7 @@ class Track {
   MediaItem toItem() => MediaItem(
     id: id, title: title, artist: artist, album: album,
     artUri: artwork == null ? null : Uri.tryParse(artwork!),
-    duration: Duration(milliseconds: durationMs),
+    duration: Duration(milliseconds: durationMs < 0 ? 0 : durationMs),
     extras: {'uri': uri, 'kind': kind},
   );
 
@@ -339,11 +339,11 @@ class AuralisMarkPainter extends CustomPainter {
       ..cubicTo(61, 12, 67, 12, 70, 18)
       ..lineTo(109, 91);
     final metric = mark.computeMetrics().first;
-    canvas.drawPath(metric.extractPath(0, metric.length * progress.clamp(0.0, 1.0)), paint);
+    canvas.drawPath(metric.extractPath(0, metric.length * progress.clamp(0.0, 1.0).toDouble()), paint);
     if (progress > .48) {
       final bar = Path()..moveTo(42, 66)..lineTo(84, 66);
       final barMetric = bar.computeMetrics().first;
-      final barProgress = ((progress - .48) / .52).clamp(0.0, 1.0);
+      final barProgress = ((progress - .48) / .52).clamp(0.0, 1.0).toDouble();
       canvas.drawPath(barMetric.extractPath(0, barMetric.length * barProgress), paint);
     }
     canvas.restore();
