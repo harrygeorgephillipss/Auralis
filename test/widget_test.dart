@@ -2,6 +2,15 @@ import 'package:auralis/main.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('media notification foreground settings are consistent', () {
+    const config = AudioServiceConfig(
+      androidNotificationOngoing: true,
+      androidStopForegroundOnPause: true,
+    );
+    expect(config.androidNotificationOngoing, isTrue);
+    expect(config.androidStopForegroundOnPause, isTrue);
+  });
+
   test('track serialization preserves local file metadata', () {
     const track = Track(
       id: 'local-1',
