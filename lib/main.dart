@@ -6,6 +6,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
@@ -16,6 +17,12 @@ const _eq = MethodChannel('xyz.luan/audioplayers');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks(['Auralis'],
+      await rootBundle.loadString('assets/legal/AURALIS_LICENSE_LGPL-3.0.txt'));
+    yield LicenseEntryWithLineBreaks(['Auralis third-party notices'],
+      await rootBundle.loadString('assets/legal/THIRD_PARTY_NOTICES.md'));
+  });
   try {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
