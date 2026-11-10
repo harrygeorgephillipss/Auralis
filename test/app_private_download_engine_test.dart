@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -23,10 +24,7 @@ void main() {
       return http.Response.bytes([1, 2, 3, 4], 200, headers: {'content-type': 'audio/mpeg'});
     }));
     await engine.enqueue(DownloadRequest(id: 'song-1', providerId: 'test-provider', source: Uri.parse('https://example.test/audio'), fileName: '../track.mp3', expectedBytes: 4, offlineSavingAllowed: true));
-    for (var i = 0; i < 100 && engineStatus(engine, 'song-1') != DownloadTaskStatus.completed; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 5));
-    }
-    final snapshot = await firstSnapshot(engine, 'song-1');
+    final snapshot = await waitForStatus(engine, 'song-1', DownloadTaskStatus.completed);
     expect(snapshot.status, DownloadTaskStatus.completed);
     expect(snapshot.localUri, isNotNull);
     expect(await File(snapshot.localUri!.toFilePath()).readAsBytes(), [1, 2, 3, 4]);
@@ -43,24 +41,17 @@ void main() {
   test('marks unsuccessful HTTP responses as failed', () async {
     final engine = AppPrivateDownloadEngine(storageDirectory: directory, client: MockClient((_) async => http.Response('missing', 404)));
     await engine.enqueue(DownloadRequest(id: 'x', providerId: 'p', source: Uri.parse('https://example.test/a'), fileName: 'a.mp3', offlineSavingAllowed: true));
-    for (var i = 0; i < 100 && engineStatus(engine, 'x') != DownloadTaskStatus.failed; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 5));
-    }
-    expect(engineStatus(engine, 'x'), DownloadTaskStatus.failed);
+    final failed = await waitForStatus(engine, 'x', DownloadTaskStatus.failed);
+    expect(failed.status, DownloadTaskStatus.failed);
     expect(await directory.list().isEmpty, isTrue);
     await engine.dispose();
   });
 }
 
-DownloadTaskStatus? engineStatus(AppPrivateDownloadEngine engine, String id) {
-  // The engine intentionally exposes state only through its stream.
-  return null;
-}
-
-Future<DownloadTaskSnapshot> firstSnapshot(AppPrivateDownloadEngine engine, String id) async {
+Future<DownloadTaskSnapshot> waitForStatus(AppPrivateDownloadEngine engine, String id, DownloadTaskStatus status) async {
   final completer = Completer<DownloadTaskSnapshot>();
   final sub = engine.watchTasks().listen((items) {
-    for (final item in items) { if (item.id == id && item.status == DownloadTaskStatus.completed) completer.complete(item); }
+    for (final item in items) { if (item.id == id && item.status == status && !completer.isCompleted) completer.complete(item); }
   });
   final result = await completer.future.timeout(const Duration(seconds: 3));
   await sub.cancel();
