@@ -1,6 +1,6 @@
 # Android-first Mornye integration checklist
 
-This document records the concrete port boundaries identified in the pinned Mornye 5.3.1 source. The Auralis root app remains a starter shell until these components are deliberately migrated.
+This document records the port boundaries identified in the pinned Mornye 5.3.1 source. The Auralis root app remains a starter UI shell until these components are deliberately migrated. The upstream Flutter app is not yet compiled as part of the Auralis root package.
 
 ## Keep and evaluate
 
@@ -58,8 +58,8 @@ Before merging the upstream app into the Auralis root:
 
 - [x] Pin exact Mornye source commit as a Git submodule.
 - [x] Record source paths and Android build constraints.
-- [ ] Build untouched upstream Android app in CI.
-- [ ] Port the Flutter app and required local plugins into Auralis root.
+- [ ] Build untouched upstream Android app in a separate upstream-specific CI job and capture all required toolchains.
+- [ ] Port the Flutter app and required local plugins into Auralis root, preserving licenses and plugin registrations.
 - [ ] Rebrand Android application identity.
 - [ ] Apply Auralis UI redesign.
 - [ ] Validate playback, library, providers and downloads on-device.
