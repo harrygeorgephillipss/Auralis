@@ -2,7 +2,9 @@
 
 Auralis is an Android-first, open-source music player project built with Flutter. The project aims to combine a highly customizable, polished listening experience with a modular provider, playback, and download architecture.
 
-> **Status:** Early project scaffold. This is not yet a functional streaming or downloading client.
+<badge>Engineering preview</badge>
+
+**Current state:** Auralis is a tested Flutter UI shell. It is not yet a functional player, streaming client or downloader. The Android host project and upstream playback integration are not yet present in the root app.
 
 ## Project goals
 
@@ -62,12 +64,12 @@ Mornye is pinned as a Git submodule at `upstream/mornye` so the reviewed upstrea
 git clone --recurse-submodules https://github.com/harrygeorgephillipss/Auralis.git
 ```
 
-If already cloned, run `git submodule update --init --recursive`. See [the upstream pin](docs/UPSTREAM_PIN.md) and [Android port checklist](docs/ANDROID_PORT_CHECKLIST.md). The root Auralis app is still a starter shell; the Mornye app has not yet been migrated into the root Flutter package.
+If already cloned, run `git submodule update --init --recursive`. See [the upstream pin](docs/UPSTREAM_PIN.md) and [Android port checklist](docs/ANDROID_PORT_CHECKLIST.md). The root Auralis app is a starter shell; the Mornye app has not yet been migrated into the root Flutter package.
 
 ## Getting started
 
-1. Install the Flutter stable SDK and Android Studio / Android SDK.
-2. Run `flutter doctor`.
+1. Install Flutter 3.47.8 (matching CI) and Android Studio / Android SDK.
+2. Run `flutter doctor` and confirm Android toolchain is available.
 3. From this directory run:
 
    ```bash
