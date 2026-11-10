@@ -166,12 +166,7 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
     if (old >= 0) { _queue[old] = item; _index = old; }
     else { _queue.add(item); _index = _queue.length - 1; }
     queue.add(List.unmodifiable(_queue));
-    try { await _playIndex(_index); }
-    catch (error) {
-      debugPrint('Auralis could not play "${track.title}": $error');
-      _ready = false;
-      _publish();
-    }
+    await _playIndex(_index);
   }
 
   Future<void> _playIndex(int i) async {
@@ -474,6 +469,13 @@ class _AuralisShellState extends State<AuralisShell> {
       }
     }
   }
+  void _play(Track track) {
+    unawaited(widget.handler.playTrack(track).catchError((Object error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Could not play ${track.title}: $error')));
+    }));
+  }
   Future<void> _save(Track t) async {
     try { await LibraryDb.instance.save(t); await _loadLibrary(); }
     catch (e) { if (mounted) setState(() => _error = 'Could not save track: $e'); }
@@ -510,10 +512,10 @@ class _AuralisShellState extends State<AuralisShell> {
       _HomePage(count: _library.length, onImport: _import,
         onLibrary: () => setState(() => _tab = 2)),
       _ExplorePage(controller: _search, results: _results, busy: _busy,
-        error: _error, onSearch: _discover, onPlay: widget.handler.playTrack,
+        error: _error, onSearch: _discover, onPlay: _play,
         onSave: _save),
       _LibraryPage(tracks: _library, onImport: _import,
-        onPlay: widget.handler.playTrack, onRemove: _remove),
+        onPlay: _play, onRemove: _remove),
       const _DownloadsPage(),
     ];
     return Scaffold(
