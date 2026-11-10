@@ -36,6 +36,7 @@ See [Android installation](docs/INSTALLATION.md). The reproducible GitHub Action
 - `THIRD_PARTY_NOTICES.md` — current upstream licence and attribution summary.
 - `docs/INSTALLATION.md` — install and first-run guide.
 - `docs/SECURITY_AND_LEGAL.md` — security and legal boundaries.
+- `docs/PRIVACY_POLICY.md` — current data and network behavior.
 
 ## Licence
 
