@@ -53,7 +53,7 @@ class AppPrivateDownloadEngine implements DownloadEngine {
 
   String _safeFileName(String value) {
     final leaf = value.replaceAll('\\', '/').split('/').last;
-    final safe = leaf.replaceAll(RegExp(r'[<>:"/\\\\|?*\\x00-\\x1F]'), '_').trim();
+    final safe = leaf.replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '_').trim();
     if (safe.isEmpty || safe == '.' || safe == '..') return '';
     return safe.length > 180 ? safe.substring(safe.length - 180) : safe;
   }
@@ -164,7 +164,7 @@ class _TransferStopped implements Exception { const _TransferStopped(); }
 
   String _safeFileName(String value) {
     final leaf = value.replaceAll('\\', '/').split('/').last;
-    final safe = leaf.replaceAll(RegExp(r'[<>:"/\\\\|?*\\x00-\\x1F]'), '_').trim();
+    final safe = leaf.replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '_').trim();
     if (safe.isEmpty || safe == '.' || safe == '..') return '';
     return safe.length > 180 ? safe.substring(safe.length - 180) : safe;
   }
