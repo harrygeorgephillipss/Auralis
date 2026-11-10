@@ -395,6 +395,7 @@ class AuralisShell extends StatefulWidget {
 
 class _AuralisShellState extends State<AuralisShell> {
   final _search = TextEditingController();
+  final ItunesPreviewProvider _catalogue = ItunesPreviewProvider();
   final List<Track> _library = [], _results = [];
   int _tab = 0;
   bool _busy = false, _eqEnabled = false;
