@@ -21,7 +21,7 @@ jobs:
           submodules: recursive
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -42,6 +42,15 @@ jobs:
       - name: Prepare Mornye audio plugin for standalone path dependency
         run: |
           sed -i '/^resolution: workspace$/d' upstream/mornye/third_party/audioplayers_android/pubspec.yaml
+
+      - name: Set Android SDK and build tools required by pinned audio plugins
+        run: |
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 37/' android/app/build.gradle.kts
+          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 37/' android/app/build.gradle.kts
+          grep -q 'compileSdk = 37' android/app/build.gradle.kts
+
+      - name: Install Android SDK 37
+        run: sdkmanager "platforms;android-37" "build-tools;37.0.0"
 
       - name: Resolve Flutter dependencies
         run: flutter pub get
