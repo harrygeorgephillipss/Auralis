@@ -94,6 +94,7 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
   bool _ready = false;
   bool _disposed = false;
   Future<void> _operation = Future<void>.value();
+  int _playRequest = 0;
   bool _eqEnabled = false;
   List<double> _eqGains = List<double>.filled(5, 0);
   Duration _position = Duration.zero;
@@ -135,6 +136,7 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
 
   Future<void> _playIndex(int i) async {
     if (_disposed || i < 0 || i >= _queue.length) return;
+    final request = ++_playRequest;
     _index = i;
     final item = _queue[i];
     final uri = item.extras?['uri'] as String?;
@@ -146,11 +148,13 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
     _publish(loading: true);
     try {
       await player.stop();
+      if (_disposed || request != _playRequest) return;
       if (kind == 'local') {
         await player.play(DeviceFileSource(uri));
       } else {
         await player.play(UrlSource(uri));
       }
+      if (_disposed || request != _playRequest) return;
       _ready = true;
       if (_eqEnabled) {
         try { await _applyEqualizer(); }
@@ -218,6 +222,7 @@ class AuralisAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandle
   }
   @override Future<void> stop() async {
     if (_disposed) return;
+    ++_playRequest;
     try { await player.stop(); } catch (e) { debugPrint('Auralis stop failed: $e'); }
     _ready = false; await super.stop(); _publish();
   }
@@ -276,7 +281,7 @@ class _AuralisShellState extends State<AuralisShell> {
   Future<void> _import() async {
     try {
       final files = await FilePicker.pickFiles(type: FileType.audio);
-      if (files == null) return;
+      if (files == null || !mounted) return;
       for (final f in files) {
       if (f.path == null) continue;
       await LibraryDb.instance.save(Track(
@@ -308,7 +313,9 @@ class _AuralisShellState extends State<AuralisShell> {
           durationMs: row['trackTimeMillis'] as int? ?? 0,
           kind: 'remote', providerUrl: row['trackViewUrl'] as String?));
       }
-    } catch (e) { _error = e.toString(); }
+    } on TimeoutException {
+      _error = 'The catalogue request timed out. Check your connection and retry.';
+    } catch (e) { _error = 'Search failed: $e'; }
     finally { if (mounted) setState(() => _busy = false); }
   }
   Future<void> _save(Track t) async {
